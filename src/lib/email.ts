@@ -21,6 +21,16 @@ function formatRange(startAt: Date, endAt: Date) {
   return `${startAt.toLocaleString()} - ${endAt.toLocaleString()}`;
 }
 
+function wrapContent(html: string) {
+  return `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+      <h2 style="margin: 0 0 12px;">Conference Room Booking</h2>
+      ${html}
+      <p style="color:#6b7280;">This is an automated message.</p>
+    </div>
+  `;
+}
+
 async function sendEmail(subject: string, to: string, html: string) {
   const apiKey = requireEnv(process.env.RESEND_API_KEY, "RESEND_API_KEY");
   const from = requireEnv(process.env.RESEND_FROM, "RESEND_FROM");
@@ -44,14 +54,14 @@ export async function sendBookingCreatedEmail(payload: BookingEmailPayload) {
   await sendEmail(
     "Booking confirmed",
     payload.to,
-    `
+    wrapContent(`
       <p>Your booking is confirmed.</p>
       <p><strong>Organization:</strong> ${payload.organizationName}</p>
       <p><strong>Room:</strong> ${payload.roomName}</p>
       <p><strong>Time:</strong> ${range}</p>
       ${pinInfo}
       ${qrInfo}
-    `,
+    `),
   );
 }
 
@@ -61,11 +71,11 @@ export async function sendBookingCanceledEmail(payload: BookingEmailPayload) {
   await sendEmail(
     "Booking canceled",
     payload.to,
-    `
+    wrapContent(`
       <p>Your booking has been canceled.</p>
       <p><strong>Organization:</strong> ${payload.organizationName}</p>
       <p><strong>Room:</strong> ${payload.roomName}</p>
       <p><strong>Time:</strong> ${range}</p>
-    `,
+    `),
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type BookingResponse = {
   booking?: {
@@ -13,14 +13,94 @@ type BookingResponse = {
   error?: string;
 };
 
+type RoomOption = {
+  id: string;
+  name: string;
+};
+
+type RoomsResponse = {
+  rooms?: RoomOption[];
+  error?: string;
+};
+
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function roundToNextQuarter(date: Date) {
+  const rounded = new Date(date);
+  const minutes = rounded.getMinutes();
+  const next = Math.ceil(minutes / 15) * 15;
+  rounded.setMinutes(next, 0, 0);
+  if (next === 60) {
+    rounded.setHours(rounded.getHours() + 1);
+    rounded.setMinutes(0, 0, 0);
+  }
+  return rounded;
+}
+
 export default function BookingsPage() {
+  const [rooms, setRooms] = useState<RoomOption[]>([]);
   const [roomId, setRoomId] = useState("");
   const [title, setTitle] = useState("");
-  const [startAt, setStartAt] = useState("");
-  const [endAt, setEndAt] = useState("");
+  const [date, setDate] = useState("");
+  const [startHour, setStartHour] = useState("09");
+  const [startMinute, setStartMinute] = useState("00");
+  const [endHour, setEndHour] = useState("10");
+  const [endMinute, setEndMinute] = useState("00");
   const [cancelId, setCancelId] = useState("");
   const [createResult, setCreateResult] = useState("");
   const [cancelResult, setCancelResult] = useState("");
+
+  const hourOptions = useMemo(
+    () => Array.from({ length: 24 }, (_, index) => pad(index)),
+    [],
+  );
+  const minuteOptions = useMemo(
+    () => ["00", "15", "30", "45"],
+    [],
+  );
+
+  useEffect(() => {
+    const now = roundToNextQuarter(new Date());
+    setDate(`${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`);
+    setStartHour(pad(now.getHours()));
+    setStartMinute(pad(now.getMinutes()));
+    const end = new Date(now.getTime() + 30 * 60000);
+    setEndHour(pad(end.getHours()));
+    setEndMinute(pad(end.getMinutes()));
+  }, []);
+
+  useEffect(() => {
+    async function loadRooms() {
+      const response = await fetch("/api/rooms");
+      const data = (await response.json()) as RoomsResponse;
+      if (!response.ok) {
+        setCreateResult(data.error ?? "Unable to load rooms");
+        return;
+      }
+      setRooms(data.rooms ?? []);
+      if (data.rooms && data.rooms.length > 0) {
+        setRoomId((previous) => previous || data.rooms?.[0]?.id || "");
+      }
+    }
+
+    loadRooms();
+  }, []);
+
+  function buildDateTime(hour: string, minute: string) {
+    if (!date) {
+      return "";
+    }
+    const value = new Date(`${date}T${hour}:${minute}:00`);
+    if (Number.isNaN(value.getTime())) {
+      return "";
+    }
+    return value.toISOString();
+  }
+
+  const startAt = buildDateTime(startHour, startMinute);
+  const endAt = buildDateTime(endHour, endMinute);
 
   async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,8 +109,8 @@ export default function BookingsPage() {
     const payload = {
       roomId: roomId.trim(),
       title: title.trim() || undefined,
-      startAt: startAt ? new Date(startAt).toISOString() : "",
-      endAt: endAt ? new Date(endAt).toISOString() : "",
+      startAt,
+      endAt,
     };
 
     const response = await fetch("/api/bookings", {
@@ -83,14 +163,23 @@ export default function BookingsPage() {
         <div className="card stack">
           <h2>Create booking</h2>
           <form className="form" onSubmit={handleCreate}>
-            <label htmlFor="roomId">Room ID</label>
-            <input
+            <label htmlFor="roomId">Room</label>
+            <select
               id="roomId"
               value={roomId}
               onChange={(event) => setRoomId(event.target.value)}
-              placeholder="room-id"
               required
-            />
+            >
+              {rooms.length === 0 ? (
+                <option value="">No rooms available</option>
+              ) : (
+                rooms.map((room) => (
+                  <option key={room.id} value={room.id}>
+                    {room.name} ({room.id})
+                  </option>
+                ))
+              )}
+            </select>
             <label htmlFor="title">Title (optional)</label>
             <input
               id="title"
@@ -98,22 +187,68 @@ export default function BookingsPage() {
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Team sync"
             />
-            <label htmlFor="startAt">Start time</label>
+            <label htmlFor="date">Date</label>
             <input
-              id="startAt"
-              type="datetime-local"
-              value={startAt}
-              onChange={(event) => setStartAt(event.target.value)}
+              id="date"
+              type="date"
+              value={date}
+              onChange={(event) => setDate(event.target.value)}
               required
             />
-            <label htmlFor="endAt">End time</label>
-            <input
-              id="endAt"
-              type="datetime-local"
-              value={endAt}
-              onChange={(event) => setEndAt(event.target.value)}
-              required
-            />
+            <label>Start time</label>
+            <div className="nav">
+              <select
+                aria-label="Start hour"
+                value={startHour}
+                onChange={(event) => setStartHour(event.target.value)}
+                required
+              >
+                {hourOptions.map((hour) => (
+                  <option key={hour} value={hour}>
+                    {hour}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Start minute"
+                value={startMinute}
+                onChange={(event) => setStartMinute(event.target.value)}
+                required
+              >
+                {minuteOptions.map((minute) => (
+                  <option key={minute} value={minute}>
+                    {minute}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label>End time</label>
+            <div className="nav">
+              <select
+                aria-label="End hour"
+                value={endHour}
+                onChange={(event) => setEndHour(event.target.value)}
+                required
+              >
+                {hourOptions.map((hour) => (
+                  <option key={hour} value={hour}>
+                    {hour}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="End minute"
+                value={endMinute}
+                onChange={(event) => setEndMinute(event.target.value)}
+                required
+              >
+                {minuteOptions.map((minute) => (
+                  <option key={minute} value={minute}>
+                    {minute}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button className="button" type="submit">
               Create booking
             </button>

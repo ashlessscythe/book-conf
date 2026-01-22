@@ -103,11 +103,20 @@ export const authOptions: NextAuthOptions = {
         await resend.emails.send({
           from,
           to: identifier,
-          subject: "Sign in to Conference Rooms",
+          subject: "Sign in to Conference Room Booking",
           html: `
-            <p>Use the link below to sign in:</p>
-            <p><a href="${url}">${url}</a></p>
-            <p>If you did not request this email, you can ignore it.</p>
+            <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+              <h2 style="margin: 0 0 12px;">Conference Room Booking</h2>
+              <p>Use the button below to sign in.</p>
+              <p style="margin: 24px 0;">
+                <a href="${url}" style="background:#111827;color:#ffffff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+                  Sign in
+                </a>
+              </p>
+              <p>If the button does not work, paste this link into your browser:</p>
+              <p><a href="${url}">${url}</a></p>
+              <p style="color:#6b7280;">If you did not request this email, you can ignore it.</p>
+            </div>
           `,
         });
       },
