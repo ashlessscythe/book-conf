@@ -5,15 +5,15 @@ import { requireSession } from "@/lib/guards";
 import { validateBookingInput } from "@/lib/booking";
 
 type RouteParams = {
-  params: {
+  params: Promise<{
     roomId: string;
-  };
+  }>;
 };
 
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const session = await requireSession();
-    const { roomId } = params;
+    const { roomId } = await params;
     const { searchParams } = new URL(request.url);
     const startAt = searchParams.get("startAt");
     const endAt = searchParams.get("endAt");
