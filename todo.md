@@ -13,6 +13,7 @@
 - Added NextAuth config and Resend-based magic link sender.
 - Applied initial Prisma migration and booking exclusion constraint.
 - Added tenant/session guard utilities.
+- Added tenant context helper for org-scoped queries.
 
 ## 1) Project foundations
 - Confirm stack setup (Next.js App Router, NextAuth, Prisma, PostgreSQL).
