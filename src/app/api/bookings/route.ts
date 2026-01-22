@@ -3,9 +3,7 @@ import { Prisma, Role } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/guards";
-import { bufferedWindow, validateBookingInput } from "@/lib/booking";
-import { createCredentialToken, generatePin } from "@/lib/credentials";
-import { hashToken } from "@/lib/crypto";
+import { createBookingWithCredentials, validateBookingInput } from "@/lib/booking";
 import { sendBookingCreatedEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
@@ -42,71 +40,16 @@ export async function POST(request: Request) {
       room.organization.timeZone,
     );
 
-    const { bufferedStart, bufferedEnd } = bufferedWindow(
-      startDate,
-      endDate,
-      room.bufferMinutes,
-    );
-
     const booking = await prisma.$transaction(
       async (tx) => {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${roomId}))`;
-
-        const conflict = await tx.booking.findFirst({
-          where: {
-            organizationId: room.organizationId,
-            roomId,
-            status: "ACTIVE",
-            deletedAt: null,
-            startAt: { lt: bufferedEnd },
-            endAt: { gt: bufferedStart },
-          },
-          select: { id: true },
+        return createBookingWithCredentials({
+          tx,
+          room,
+          userId: session.user.id,
+          title: typeof title === "string" ? title : null,
+          startAt: startDate,
+          endAt: endDate,
         });
-
-        if (conflict) {
-          throw new Error("Time slot is not available");
-        }
-
-        const booking = await tx.booking.create({
-          data: {
-            organizationId: room.organizationId,
-            roomId,
-            createdById: session.user.id,
-            title: typeof title === "string" ? title : null,
-            startAt: startDate,
-            endAt: endDate,
-          },
-        });
-
-        const pin = generatePin();
-        const qr = createCredentialToken();
-        const expiresAt = endDate;
-
-        await tx.bookingCredential.createMany({
-          data: [
-            {
-              organizationId: room.organizationId,
-              bookingId: booking.id,
-              type: "PIN",
-              tokenHash: hashToken(pin),
-              expiresAt,
-            },
-            {
-              organizationId: room.organizationId,
-              bookingId: booking.id,
-              type: "QR",
-              tokenHash: qr.tokenHash,
-              expiresAt,
-            },
-          ],
-        });
-
-        return {
-          booking,
-          pin,
-          qrToken: qr.token,
-        };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );

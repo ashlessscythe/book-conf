@@ -39,7 +39,7 @@
 ## 4) Booking logic
 - [x] Implement 15-minute boundary snapping and availability windows.
 - [x] Enforce room min/max duration and buffer time.
-- [ ] Build recurring expansion with partial failure handling.
+- [x] Build recurring expansion with partial failure handling.
 - [x] Add transactional conflict prevention.
 
 ## 5) Tablet / kiosk mode

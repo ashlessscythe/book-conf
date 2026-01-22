@@ -13,6 +13,17 @@ type BookingResponse = {
   error?: string;
 };
 
+type RecurringResponse = {
+  ruleId?: string;
+  results?: Array<{
+    startAt: string;
+    endAt: string;
+    bookingId?: string;
+    error?: string;
+  }>;
+  error?: string;
+};
+
 type RoomOption = {
   id: string;
   name: string;
@@ -51,6 +62,13 @@ export default function BookingsPage() {
   const [cancelId, setCancelId] = useState("");
   const [createResult, setCreateResult] = useState("");
   const [cancelResult, setCancelResult] = useState("");
+  const [recurringResult, setRecurringResult] = useState("");
+  const [recurringCount, setRecurringCount] = useState("5");
+  const [recurringFrequency, setRecurringFrequency] = useState<"DAILY" | "WEEKLY">(
+    "WEEKLY",
+  );
+  const [recurringDays, setRecurringDays] = useState<number[]>([]);
+  const [recurringDuration, setRecurringDuration] = useState("30");
 
   const hourOptions = useMemo(
     () => Array.from({ length: 24 }, (_, index) => pad(index)),
@@ -143,6 +161,36 @@ export default function BookingsPage() {
       return;
     }
     setCancelResult(JSON.stringify(data.booking, null, 2));
+  }
+
+  async function handleRecurring(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setRecurringResult("Creating recurring bookings...");
+
+    const payload = {
+      roomId: roomId.trim(),
+      title: title.trim() || undefined,
+      startAt,
+      durationMinutes: Number(recurringDuration),
+      frequency: recurringFrequency,
+      interval: 1,
+      daysOfWeek: recurringFrequency === "WEEKLY" ? recurringDays : undefined,
+      count: Number(recurringCount),
+    };
+
+    const response = await fetch("/api/bookings/recurring", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = (await response.json()) as RecurringResponse;
+    if (!response.ok) {
+      setRecurringResult(data.error ?? "Unable to create recurring bookings");
+      return;
+    }
+
+    setRecurringResult(JSON.stringify(data, null, 2));
   }
 
   return (
@@ -254,6 +302,73 @@ export default function BookingsPage() {
             </button>
           </form>
           <div className="result">{createResult || "No booking created yet."}</div>
+        </div>
+
+        <div className="card stack">
+          <h2>Recurring bookings</h2>
+          <form className="form" onSubmit={handleRecurring}>
+            <label htmlFor="recurringDuration">Duration (minutes)</label>
+            <input
+              id="recurringDuration"
+              type="number"
+              value={recurringDuration}
+              onChange={(event) => setRecurringDuration(event.target.value)}
+              required
+            />
+            <label htmlFor="recurringFrequency">Frequency</label>
+            <select
+              id="recurringFrequency"
+              value={recurringFrequency}
+              onChange={(event) =>
+                setRecurringFrequency(
+                  event.target.value === "DAILY" ? "DAILY" : "WEEKLY",
+                )
+              }
+            >
+              <option value="DAILY">Daily</option>
+              <option value="WEEKLY">Weekly</option>
+            </select>
+            {recurringFrequency === "WEEKLY" ? (
+              <label className="stack">
+                <span className="muted">Days of week</span>
+                <div className="nav">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                    (label, index) => (
+                      <label key={label} className="stack">
+                        <input
+                          aria-label={`${label} recurring day`}
+                          type="checkbox"
+                          checked={recurringDays.includes(index)}
+                          onChange={(event) => {
+                            setRecurringDays((previous) =>
+                              event.target.checked
+                                ? [...previous, index]
+                                : previous.filter((day) => day !== index),
+                            );
+                          }}
+                        />
+                        <span className="muted">{label}</span>
+                      </label>
+                    ),
+                  )}
+                </div>
+              </label>
+            ) : null}
+            <label htmlFor="recurringCount">Occurrences</label>
+            <input
+              id="recurringCount"
+              type="number"
+              value={recurringCount}
+              onChange={(event) => setRecurringCount(event.target.value)}
+              required
+            />
+            <button className="button secondary" type="submit">
+              Create recurring
+            </button>
+          </form>
+          <div className="result">
+            {recurringResult || "No recurring bookings created yet."}
+          </div>
         </div>
 
         <div className="card stack">

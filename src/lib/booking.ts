@@ -1,4 +1,7 @@
-import { Room } from "@prisma/client";
+import { Prisma, Room } from "@prisma/client";
+
+import { createCredentialToken, generatePin } from "@/lib/credentials";
+import { hashToken } from "@/lib/crypto";
 
 type BookingInput = {
   startAt: string;
@@ -104,4 +107,86 @@ export function bufferedWindow(
   const bufferedStart = new Date(startAt.getTime() - bufferMinutes * 60000);
   const bufferedEnd = new Date(endAt.getTime() + bufferMinutes * 60000);
   return { bufferedStart, bufferedEnd };
+}
+
+type BookingCreateParams = {
+  tx: Prisma.TransactionClient;
+  room: Room;
+  userId: string;
+  title: string | null;
+  startAt: Date;
+  endAt: Date;
+};
+
+export async function createBookingWithCredentials({
+  tx,
+  room,
+  userId,
+  title,
+  startAt,
+  endAt,
+}: BookingCreateParams) {
+  const { bufferedStart, bufferedEnd } = bufferedWindow(
+    startAt,
+    endAt,
+    room.bufferMinutes,
+  );
+
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${room.id}))`;
+
+  const conflict = await tx.booking.findFirst({
+    where: {
+      organizationId: room.organizationId,
+      roomId: room.id,
+      status: "ACTIVE",
+      deletedAt: null,
+      startAt: { lt: bufferedEnd },
+      endAt: { gt: bufferedStart },
+    },
+    select: { id: true },
+  });
+
+  if (conflict) {
+    throw new Error("Time slot is not available");
+  }
+
+  const booking = await tx.booking.create({
+    data: {
+      organizationId: room.organizationId,
+      roomId: room.id,
+      createdById: userId,
+      title,
+      startAt,
+      endAt,
+    },
+  });
+
+  const pin = generatePin();
+  const qr = createCredentialToken();
+  const expiresAt = endAt;
+
+  await tx.bookingCredential.createMany({
+    data: [
+      {
+        organizationId: room.organizationId,
+        bookingId: booking.id,
+        type: "PIN",
+        tokenHash: hashToken(pin),
+        expiresAt,
+      },
+      {
+        organizationId: room.organizationId,
+        bookingId: booking.id,
+        type: "QR",
+        tokenHash: qr.tokenHash,
+        expiresAt,
+      },
+    ],
+  });
+
+  return {
+    booking,
+    pin,
+    qrToken: qr.token,
+  };
 }
