@@ -1,3 +1,5 @@
+import ThemeSelector from "@/components/ThemeSelector";
+
 export default function Home() {
   return (
     <div className="container stack">
@@ -7,6 +9,7 @@ export default function Home() {
           <p className="muted">Quick access to booking, tablet, and room tools.</p>
         </div>
         <nav className="nav">
+          <ThemeSelector />
           <a className="button secondary" href="/api/auth/signin">
             Sign in
           </a>

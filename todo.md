@@ -18,6 +18,7 @@
 - [x] Added tablet auth and validation endpoints with rate limiting.
 - [x] Added frontend pages for bookings, availability, and tablet flows.
 - [x] Added Tailwind theme tokens with multi-theme palette.
+- [x] Added theme selector with persisted preference.
 
 ## 1) Project foundations
 - [ ] Confirm stack setup (Next.js App Router, NextAuth, Prisma, PostgreSQL).
