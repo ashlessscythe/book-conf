@@ -56,7 +56,7 @@ export function expandRecurrence(params: RecurrenceParams) {
 
     if (
       weeksFromStart % interval === 0 &&
-      days.includes(cursor.getDay()) &&
+      days?.includes(cursor.getDay()) &&
       (generated === 0 || !isSameDay(cursor, occurrences[generated - 1]?.startAt))
     ) {
       const startAt = new Date(
