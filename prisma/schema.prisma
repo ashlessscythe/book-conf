@@ -200,6 +200,7 @@ model LoginChallenge {
   id             String   @id @default(cuid())
   organizationId String
   tabletId       String?
+  email          String?
   pinHash        String
   tokenHash      String
   expiresAt      DateTime

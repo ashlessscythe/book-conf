@@ -20,6 +20,7 @@
 - [x] Added Tailwind theme tokens with multi-theme palette.
 - [x] Added theme selector with persisted preference.
 - [x] Added login PIN challenge flow for magic link sign-in.
+- [x] Switched sign-in to email PIN verification.
 
 ## 1) Project foundations
 - [x] Confirm stack setup (Next.js App Router, NextAuth, Prisma, PostgreSQL).

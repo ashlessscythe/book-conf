@@ -4,8 +4,10 @@ import EmailProvider from "next-auth/providers/email";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { Role } from "@prisma/client";
 import { Resend } from "resend";
+import CredentialsProvider from "next-auth/providers/credentials";
 
 import { prisma } from "@/lib/prisma";
+import { hashToken } from "@/lib/crypto";
 
 const DEFAULT_ORG_NAME = "Default Organization";
 const DEFAULT_ORG_TIME_ZONE = "UTC";
@@ -92,6 +94,59 @@ export const authOptions: NextAuthOptions = {
     signIn: "/auth/signin",
   },
   providers: [
+    CredentialsProvider({
+      name: "PIN",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        pin: { label: "PIN", type: "text" },
+      },
+      authorize: async (credentials) => {
+        const email = normalizeEmail(credentials?.email);
+        const pin = credentials?.pin?.trim() ?? "";
+
+        if (!email || !pin) {
+          return null;
+        }
+
+        if (!isEmailAllowed(email)) {
+          return null;
+        }
+
+        const challenge = await prisma.loginChallenge.findFirst({
+          where: {
+            email,
+            usedAt: null,
+            expiresAt: { gt: new Date() },
+            pinHash: hashToken(pin),
+          } as any,
+        });
+
+        if (!challenge) {
+          return null;
+        }
+
+        await prisma.loginChallenge.update({
+          where: { id: challenge.id },
+          data: { usedAt: new Date() },
+        });
+
+        const organization = await resolveOrganization();
+        const adminEmail = normalizeEmail(process.env.INITIAL_ADMIN_EMAIL_ADDRESS);
+        const role = adminEmail && email === adminEmail ? Role.ADMIN : Role.USER;
+
+        const user = await prisma.user.upsert({
+          where: { email },
+          update: { role },
+          create: {
+            email,
+            role,
+            organizationId: organization.id,
+          },
+        });
+
+        return user;
+      },
+    }),
     EmailProvider({
       sendVerificationRequest: async ({ identifier, url }) => {
         const apiKey = requireEnv(
@@ -123,9 +178,12 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    signIn: ({ user }) => {
+    signIn: ({ user, account }) => {
       if (!user?.email) {
         return false;
+      }
+      if (account?.provider === "credentials") {
+        return true;
       }
       return isEmailAllowed(user.email);
     },

@@ -17,6 +17,12 @@ type BookingEmailPayload = {
   qrToken?: string;
 };
 
+type LoginPinEmailPayload = {
+  to: string;
+  pin: string;
+  expiresAt: Date;
+};
+
 function formatRange(startAt: Date, endAt: Date) {
   return `${startAt.toLocaleString()} - ${endAt.toLocaleString()}`;
 }
@@ -76,6 +82,20 @@ export async function sendBookingCanceledEmail(payload: BookingEmailPayload) {
       <p><strong>Organization:</strong> ${payload.organizationName}</p>
       <p><strong>Room:</strong> ${payload.roomName}</p>
       <p><strong>Time:</strong> ${range}</p>
+    `),
+  );
+}
+
+export async function sendLoginPinEmail(payload: LoginPinEmailPayload) {
+  await sendEmail(
+    "Your sign-in PIN",
+    payload.to,
+    wrapContent(`
+      <p>Use the PIN below to sign in.</p>
+      <p style="font-size: 24px; letter-spacing: 4px; font-weight: 700;">
+        ${payload.pin}
+      </p>
+      <p><strong>Expires at:</strong> ${payload.expiresAt.toLocaleString()}</p>
     `),
   );
 }
