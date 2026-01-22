@@ -60,6 +60,12 @@ export default function AdminUsersPage() {
           <p className="muted">Manage user roles for your organization.</p>
         </div>
         <nav className="nav">
+          <a className="button secondary" href="/admin/bookings">
+            Bookings
+          </a>
+          <a className="button secondary" href="/admin/audit">
+            Audit logs
+          </a>
           <a className="button secondary" href="/admin/rooms">
             Manage rooms
           </a>

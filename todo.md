@@ -59,7 +59,7 @@
 
 ## 8) Admin dashboard
 - [x] Build org, user, room management.
-- [ ] Configure booking controls and audit log views.
+- [x] Configure booking controls and audit log views.
 - [ ] Expose time ranges, duration limits, and buffer rules.
 
 ## 9) API architecture

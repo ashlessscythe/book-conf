@@ -33,6 +33,13 @@ export default function Home() {
           </a>
         </div>
         <div className="card stack">
+          <h2>Audit logs</h2>
+          <p className="muted">Review system activity.</p>
+          <a className="button" href="/admin/audit">
+            View logs
+          </a>
+        </div>
+        <div className="card stack">
           <h2>Room availability</h2>
           <p className="muted">Check availability for a room.</p>
           <a className="button" href="/rooms/sample-room/availability">

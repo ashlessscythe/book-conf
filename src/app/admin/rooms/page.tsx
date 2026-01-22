@@ -113,6 +113,12 @@ export default function AdminRoomsPage() {
           <p className="muted">Create and manage rooms for your organization.</p>
         </div>
         <nav className="nav">
+          <a className="button secondary" href="/admin/bookings">
+            Bookings
+          </a>
+          <a className="button secondary" href="/admin/audit">
+            Audit logs
+          </a>
           <a className="button secondary" href="/admin/users">
             Manage users
           </a>
