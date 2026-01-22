@@ -11,6 +11,8 @@
 - Scaffolded Next.js App Router project.
 - Added Prisma schema with tenant scoping.
 - Added NextAuth config and Resend-based magic link sender.
+- Applied initial Prisma migration and booking exclusion constraint.
+- Added tenant/session guard utilities.
 
 ## 1) Project foundations
 - Confirm stack setup (Next.js App Router, NextAuth, Prisma, PostgreSQL).
