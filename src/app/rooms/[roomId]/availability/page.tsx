@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type AvailabilityResponse = {
   room?: {
@@ -26,8 +27,21 @@ type PageProps = {
   }>;
 };
 
+type RoomOption = {
+  id: string;
+  name: string;
+};
+
+type RoomsResponse = {
+  rooms?: RoomOption[];
+  error?: string;
+};
+
 export default function AvailabilityPage({ params }: PageProps) {
   const { roomId } = use(params);
+  const router = useRouter();
+  const [rooms, setRooms] = useState<RoomOption[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState(roomId);
   const [date, setDate] = useState("");
   const [startHour, setStartHour] = useState("09");
   const [startMinute, setStartMinute] = useState("00");
@@ -43,6 +57,20 @@ export default function AvailabilityPage({ params }: PageProps) {
     [],
   );
   const minuteOptions = useMemo(() => ["00", "15", "30", "45"], []);
+
+  useEffect(() => {
+    async function loadRooms() {
+      const response = await fetch("/api/rooms");
+      const data = (await response.json()) as RoomsResponse;
+      if (!response.ok) {
+        setResult(data.error ?? "Unable to load rooms");
+        return;
+      }
+      setRooms(data.rooms ?? []);
+    }
+
+    loadRooms();
+  }, []);
 
   useEffect(() => {
     const now = new Date();
@@ -89,7 +117,7 @@ export default function AvailabilityPage({ params }: PageProps) {
     });
 
     const response = await fetch(
-      `/api/rooms/${roomId}/availability?${query.toString()}`,
+      `/api/rooms/${selectedRoomId}/availability?${query.toString()}`,
     );
     const data = (await response.json()) as AvailabilityResponse;
 
@@ -107,7 +135,7 @@ export default function AvailabilityPage({ params }: PageProps) {
       <header className="header">
         <div>
           <h1>Room availability</h1>
-          <p className="muted">Room ID: {roomId}</p>
+          <p className="muted">Room ID: {selectedRoomId}</p>
         </div>
         <nav className="nav">
           <a className="button secondary" href="/">
@@ -119,6 +147,29 @@ export default function AvailabilityPage({ params }: PageProps) {
       <section className="card stack">
         <h2>Check availability</h2>
         <form className="form" onSubmit={handleCheck}>
+          <label htmlFor="roomSelect">Room</label>
+          <select
+            id="roomSelect"
+            value={selectedRoomId}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSelectedRoomId(value);
+              if (value) {
+                router.push(`/rooms/${value}/availability`);
+              }
+            }}
+            required
+          >
+            {rooms.length === 0 ? (
+              <option value="">No rooms available</option>
+            ) : (
+              rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.name} ({room.id})
+                </option>
+              ))
+            )}
+          </select>
           <label htmlFor="date">Date</label>
           <input
             id="date"
