@@ -17,6 +17,7 @@
 - Added booking APIs for create/cancel and availability checks.
 - Added tablet auth and validation endpoints with rate limiting.
 - Added frontend pages for bookings, availability, and tablet flows.
+- Added Tailwind theme tokens with multi-theme palette.
 
 ## 1) Project foundations
 - Confirm stack setup (Next.js App Router, NextAuth, Prisma, PostgreSQL).
