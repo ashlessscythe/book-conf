@@ -79,7 +79,7 @@ model User {
 }
 
 model Room {
-  id                       String    @id @default(cuid())
+  id                       String    @id
   organizationId           String
   name                     String
   location                 String?
