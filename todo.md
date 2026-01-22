@@ -14,6 +14,7 @@
 - Applied initial Prisma migration and booking exclusion constraint.
 - Added tenant/session guard utilities.
 - Added tenant context helper for org-scoped queries.
+- Added booking APIs for create/cancel and availability checks.
 
 ## 1) Project foundations
 - Confirm stack setup (Next.js App Router, NextAuth, Prisma, PostgreSQL).
