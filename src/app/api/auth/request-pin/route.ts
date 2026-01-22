@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
   const isAllowed = await authOptions.callbacks?.signIn?.({
     user: { email } as any,
-    account: undefined,
+    account: null,
     profile: undefined,
     email: undefined,
     credentials: undefined,
