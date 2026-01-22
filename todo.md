@@ -48,14 +48,15 @@
 - [ ] Add auto-refresh and offline resilience strategy.
 
 ## 6) Credentials (PIN/QR) & validation
-- [ ] Generate per-booking PIN and QR token.
+- [x] Generate per-booking PIN and QR token.
 - [x] Hash credentials at rest and validate time-bound usage.
 - [x] Rate-limit validation attempts and log events.
 
 ## 7) Emails & notifications
-- [ ] Create templates for booking create/cancel/reminder.
+- [x] Create templates for booking create/cancel emails.
+- [ ] Add reminder email template.
 - [ ] Ensure idempotency and safe retries.
-- [ ] Include PIN and QR in messages.
+- [x] Include PIN and QR in messages.
 
 ## 8) Admin dashboard
 - [x] Build org, user, room management.

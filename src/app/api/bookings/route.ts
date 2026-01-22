@@ -4,6 +4,9 @@ import { Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/guards";
 import { bufferedWindow, validateBookingInput } from "@/lib/booking";
+import { createCredentialToken, generatePin } from "@/lib/credentials";
+import { hashToken } from "@/lib/crypto";
+import { sendBookingCreatedEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -65,7 +68,7 @@ export async function POST(request: Request) {
           throw new Error("Time slot is not available");
         }
 
-        return tx.booking.create({
+        const booking = await tx.booking.create({
           data: {
             organizationId: room.organizationId,
             roomId,
@@ -75,11 +78,64 @@ export async function POST(request: Request) {
             endAt: endDate,
           },
         });
+
+        const pin = generatePin();
+        const qr = createCredentialToken();
+        const expiresAt = endDate;
+
+        await tx.bookingCredential.createMany({
+          data: [
+            {
+              organizationId: room.organizationId,
+              bookingId: booking.id,
+              type: "PIN",
+              tokenHash: hashToken(pin),
+              expiresAt,
+            },
+            {
+              organizationId: room.organizationId,
+              bookingId: booking.id,
+              type: "QR",
+              tokenHash: qr.tokenHash,
+              expiresAt,
+            },
+          ],
+        });
+
+        return {
+          booking,
+          pin,
+          qrToken: qr.token,
+        };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
 
-    return NextResponse.json({ booking }, { status: 201 });
+    const responsePayload = {
+      booking: booking.booking,
+      credentials: {
+        pin: booking.pin,
+        qrToken: booking.qrToken,
+      },
+    };
+
+    if (session.user.email) {
+      try {
+        await sendBookingCreatedEmail({
+          to: session.user.email,
+          roomName: room.name,
+          organizationName: room.organization.name,
+          startAt: booking.booking.startAt,
+          endAt: booking.booking.endAt,
+          pin: booking.pin,
+          qrToken: booking.qrToken,
+        });
+      } catch (error) {
+        // Email failures should not block booking creation.
+      }
+    }
+
+    return NextResponse.json(responsePayload, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "Time slot is not available") {
       return NextResponse.json({ error: error.message }, { status: 409 });
