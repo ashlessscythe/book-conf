@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 
 type AvailabilityResponse = {
   room?: {
@@ -21,12 +21,13 @@ type AvailabilityResponse = {
 };
 
 type PageProps = {
-  params: {
+  params: Promise<{
     roomId: string;
-  };
+  }>;
 };
 
 export default function AvailabilityPage({ params }: PageProps) {
+  const { roomId } = use(params);
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
   const [result, setResult] = useState("");
@@ -41,7 +42,7 @@ export default function AvailabilityPage({ params }: PageProps) {
     });
 
     const response = await fetch(
-      `/api/rooms/${params.roomId}/availability?${query.toString()}`,
+      `/api/rooms/${roomId}/availability?${query.toString()}`,
     );
     const data = (await response.json()) as AvailabilityResponse;
 
@@ -57,7 +58,7 @@ export default function AvailabilityPage({ params }: PageProps) {
       <header className="header">
         <div>
           <h1>Room availability</h1>
-          <p className="muted">Room ID: {params.roomId}</p>
+          <p className="muted">Room ID: {roomId}</p>
         </div>
         <nav className="nav">
           <a className="button secondary" href="/">
