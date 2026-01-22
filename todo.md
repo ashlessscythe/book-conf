@@ -57,7 +57,7 @@
 - [ ] Include PIN and QR in messages.
 
 ## 8) Admin dashboard
-- [ ] Build org, user, room management.
+- [x] Build org, user, room management.
 - [ ] Configure booking controls and audit log views.
 - [ ] Expose time ranges, duration limits, and buffer rules.
 

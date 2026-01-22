@@ -1,3 +1,4 @@
+import React from "react";
 import ThemeSelector from "@/components/ThemeSelector";
 
 export default function Home() {
@@ -22,6 +23,13 @@ export default function Home() {
           <p className="muted">Create and cancel bookings.</p>
           <a className="button" href="/bookings">
             Open bookings
+          </a>
+        </div>
+        <div className="card stack">
+          <h2>Admin</h2>
+          <p className="muted">Manage rooms and user access.</p>
+          <a className="button" href="/admin/rooms">
+            Open admin
           </a>
         </div>
         <div className="card stack">
