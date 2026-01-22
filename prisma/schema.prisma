@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+  TABLET
+}
+
+enum BookingStatus {
+  ACTIVE
+  CANCELED
+}
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+}
+
+enum CredentialType {
+  PIN
+  QR
+}
+
+enum AuditAction {
+  BOOKING_CREATED
+  BOOKING_CANCELED
+  BOOKING_VALIDATED
+  ADMIN_OVERRIDE
+  TABLET_AUTH
+}
+
+enum ActorType {
+  USER
+  TABLET
+  SYSTEM
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  timeZone  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users             User[]
+  rooms             Room[]
+  bookings          Booking[]
+  recurringRules    RecurringBookingRule[]
+  tablets           Tablet[]
+  auditLogs         AuditLog[]
+  BookingCredential BookingCredential[]
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  role           Role      @default(USER)
+  organizationId String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization     Organization           @relation(fields: [organizationId], references: [id])
+  accounts         Account[]
+  sessions         Session[]
+  bookings         Booking[]              @relation("BookingCreatedBy")
+  canceledBookings Booking[]              @relation("BookingCanceledBy")
+  rules            RecurringBookingRule[] @relation("RuleCreatedBy")
+  auditLogs        AuditLog[]             @relation("AuditUser")
+}
+
+model Room {
+  id                       String    @id @default(cuid())
+  organizationId           String
+  name                     String
+  location                 String?
+  capacity                 Int?
+  availabilityStartMinutes Int       @default(480)
+  availabilityEndMinutes   Int       @default(1080)
+  minDurationMinutes       Int       @default(15)
+  maxDurationMinutes       Int       @default(240)
+  bufferMinutes            Int       @default(0)
+  timeZone                 String?
+  deletedAt                DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  organization Organization           @relation(fields: [organizationId], references: [id])
+  bookings     Booking[]
+  tablets      Tablet[]
+  rules        RecurringBookingRule[]
+
+  @@unique([organizationId, name])
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  organizationId  String
+  roomId          String
+  createdById     String?
+  title           String?
+  startAt         DateTime
+  endAt           DateTime
+  status          BookingStatus @default(ACTIVE)
+  canceledAt      DateTime?
+  canceledById    String?
+  recurringRuleId String?
+  deletedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization  Organization          @relation(fields: [organizationId], references: [id])
+  room          Room                  @relation(fields: [roomId], references: [id])
+  createdBy     User?                 @relation("BookingCreatedBy", fields: [createdById], references: [id])
+  canceledBy    User?                 @relation("BookingCanceledBy", fields: [canceledById], references: [id])
+  recurringRule RecurringBookingRule? @relation(fields: [recurringRuleId], references: [id])
+  credentials   BookingCredential[]
+  auditLogs     AuditLog[]
+  // Add a PostgreSQL exclusion constraint on (roomId, tstzrange(startAt, endAt))
+  // to prevent overlaps. Implement via a custom migration.
+
+  @@index([organizationId, roomId, startAt, endAt])
+  @@index([roomId, startAt, endAt])
+  @@index([createdById])
+}
+
+model RecurringBookingRule {
+  id               String              @id @default(cuid())
+  organizationId   String
+  roomId           String
+  createdById      String
+  title            String?
+  frequency        RecurrenceFrequency
+  interval         Int                 @default(1)
+  daysOfWeek       Int[]
+  startDate        DateTime
+  endDate          DateTime?
+  startTimeMinutes Int
+  durationMinutes  Int
+  timeZone         String
+  deletedAt        DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  room         Room         @relation(fields: [roomId], references: [id])
+  createdBy    User         @relation("RuleCreatedBy", fields: [createdById], references: [id])
+  bookings     Booking[]
+}
+
+model BookingCredential {
+  id             String         @id @default(cuid())
+  organizationId String
+  bookingId      String
+  type           CredentialType
+  tokenHash      String
+  expiresAt      DateTime
+  lastUsedAt     DateTime?
+  createdAt      DateTime       @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  booking      Booking      @relation(fields: [bookingId], references: [id])
+
+  @@unique([bookingId, type])
+  @@index([organizationId, type])
+}
+
+model Tablet {
+  id               String    @id @default(cuid())
+  organizationId   String
+  roomId           String
+  name             String
+  credentialHash   String
+  sessionTokenHash String?
+  sessionExpiresAt DateTime?
+  lastSeenAt       DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  room         Room         @relation(fields: [roomId], references: [id])
+  auditLogs    AuditLog[]
+
+  @@unique([organizationId, name])
+}
+
+model AuditLog {
+  id             String      @id @default(cuid())
+  organizationId String
+  action         AuditAction
+  actorType      ActorType
+  actorUserId    String?
+  actorTabletId  String?
+  bookingId      String?
+  metadata       Json?
+  createdAt      DateTime    @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  actorUser    User?        @relation("AuditUser", fields: [actorUserId], references: [id])
+  actorTablet  Tablet?      @relation(fields: [actorTabletId], references: [id])
+  booking      Booking?     @relation(fields: [bookingId], references: [id])
+
+  @@index([organizationId, action])
+  @@index([bookingId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
