@@ -19,6 +19,7 @@
 - [x] Added frontend pages for bookings, availability, and tablet flows.
 - [x] Added Tailwind theme tokens with multi-theme palette.
 - [x] Added theme selector with persisted preference.
+- [x] Added login PIN challenge flow for magic link sign-in.
 
 ## 1) Project foundations
 - [x] Confirm stack setup (Next.js App Router, NextAuth, Prisma, PostgreSQL).

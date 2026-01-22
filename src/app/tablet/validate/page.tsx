@@ -63,6 +63,9 @@ export default function TabletValidatePage() {
           <a className="button secondary" href="/tablet/auth">
             Tablet auth
           </a>
+          <a className="button secondary" href="/tablet/challenge">
+            Login PIN
+          </a>
           <a className="button secondary" href="/">
             Back home
           </a>

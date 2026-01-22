@@ -67,10 +67,10 @@ async function resolveOrganization() {
 
 const prismaAdapter = PrismaAdapter(prisma) as Adapter;
 
-prismaAdapter.createUser = async (data) => {
+prismaAdapter.createUser = async (data: any) => {
   const organization = await resolveOrganization();
   const adminEmail = normalizeEmail(process.env.INITIAL_ADMIN_EMAIL_ADDRESS);
-  const email = normalizeEmail(data.email);
+  const email = normalizeEmail(data?.email);
   const role = adminEmail && email === adminEmail ? Role.ADMIN : Role.USER;
 
   return prisma.user.create({
@@ -87,6 +87,9 @@ export const authOptions: NextAuthOptions = {
   adapter: prismaAdapter,
   session: {
     strategy: "database",
+  },
+  pages: {
+    signIn: "/auth/signin",
   },
   providers: [
     EmailProvider({

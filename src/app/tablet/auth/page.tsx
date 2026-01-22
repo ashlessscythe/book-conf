@@ -56,6 +56,9 @@ export default function TabletAuthPage() {
           <p className="muted">Store a session token for validation.</p>
         </div>
         <nav className="nav">
+          <a className="button secondary" href="/tablet/challenge">
+            Show login PIN
+          </a>
           <a className="button secondary" href="/">
             Back home
           </a>

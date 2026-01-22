@@ -11,7 +11,7 @@ export default function Home() {
         </div>
         <nav className="nav">
           <ThemeSelector />
-          <a className="button secondary" href="/api/auth/signin">
+          <a className="button secondary" href="/auth/signin">
             Sign in
           </a>
         </nav>
