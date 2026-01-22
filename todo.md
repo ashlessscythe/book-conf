@@ -31,7 +31,7 @@
 - [ ] Define constraints: tenant scoping, booking overlap prevention, soft deletes.
 
 ## 3) Auth & authorization
-- [ ] Configure NextAuth magic link flow.
+- [x] Configure NextAuth magic link flow.
 - [ ] Implement roles (ADMIN, USER, TABLET) and server-side guards.
 - [ ] Ensure tenant isolation by organizationId in all queries.
 
