@@ -6,8 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { hashToken } from "@/lib/crypto";
 
-function getSessionToken() {
-  const store = cookies();
+async function getSessionToken() {
+  const store = await cookies();
   return (
     store.get("__Secure-next-auth.session-token")?.value ||
     store.get("__Host-next-auth.session-token")?.value ||
@@ -17,7 +17,7 @@ function getSessionToken() {
 }
 
 async function resolveSession(userId: string) {
-  const token = getSessionToken();
+  const token = await getSessionToken();
   if (token) {
     const session = await prisma.session.findUnique({
       where: { sessionToken: token },
