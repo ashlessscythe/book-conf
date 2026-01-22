@@ -16,6 +16,7 @@
 - Added tenant context helper for org-scoped queries.
 - Added booking APIs for create/cancel and availability checks.
 - Added tablet auth and validation endpoints with rate limiting.
+- Added frontend pages for bookings, availability, and tablet flows.
 
 ## 1) Project foundations
 - Confirm stack setup (Next.js App Router, NextAuth, Prisma, PostgreSQL).
